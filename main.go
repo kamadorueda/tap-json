@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	cli.Parse()
+	var config cli.Config = cli.Parse()
+	var success bool = process.Process(&config)
 
-	fmt.Println(process.Version)
+	fmt.Println("[INFO] Success:", success)
 }
