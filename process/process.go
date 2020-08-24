@@ -4,15 +4,64 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/kamadorueda/tap-json/cli"
 )
 
-// Linearize take an arbitrary datastructure and write results to staging area
-func Linearize(stagingArea string, relation string, value interface{}) {
-	fmt.Println("Linearize:", stagingArea, relation, value)
+// IsBase return true if the provided value is a basic type
+func IsBase(value *interface{}) bool {
+	switch (*value).(type) {
+	case bool:
+		return true
+	case float64:
+		return true
+	case string:
+		return true
+	default:
+		return false
+	}
+}
+
+func isArray(value *interface{}) bool {
+	switch (*value).(type) {
+	case []interface{}:
+		return true
+	default:
+		return false
+	}
+}
+
+func isMap(value *interface{}) bool {
+	switch (*value).(type) {
+	case map[string]interface{}:
+		return true
+	default:
+		return false
+	}
+}
+
+// Simplify data
+func Simplify(value *interface{}) *interface{} {
+	var newValue interface{}
+
+	fmt.Println("Simplify:", *value)
+	fmt.Println(fmt.Sprintf("    type: %T", *value))
+
+	if IsBase(value) {
+		newValue = *value
+	} else if isMap(value) {
+		var newValueTmp = make(map[string]interface{})
+		for k, v := range (*value).(map[string]interface{}) {
+			newValueTmp[k] = v
+		}
+		newValue = newValueTmp
+	} else {
+		panic(value)
+	}
+
+	fmt.Println("Simplified:", newValue)
+	return &newValue
 }
 
 // Process take the input stream and outputs Singer records
@@ -21,10 +70,10 @@ func Process(config *cli.Config) bool {
 	var inputData map[string]interface{}
 
 	// Create a temporary directory where results will be stored
-	stagingArea, err := ioutil.TempDir("", "")
-	if err != nil {
-		panic(err)
-	}
+	// stagingArea, err := ioutil.TempDir("", "")
+	// if err != nil {
+	// 	panic(err)
+	// }
 
 	// Scan stdin for JSON lines
 	scanner := bufio.NewScanner(os.Stdin)
@@ -39,9 +88,15 @@ func Process(config *cli.Config) bool {
 			continue
 		}
 
+		var record interface{}
+		record = inputData["record"]
+
 		// Do the magic denesting process
-		Linearize(stagingArea, inputData["stream"].(string), inputData["record"])
+		Simplify(&record)
+
+		fmt.Println(record)
 	}
+
 	if err := scanner.Err(); err != nil {
 		fmt.Println("[ERROR] While scanning os.Stdin:", err)
 	}
