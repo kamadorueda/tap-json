@@ -1,2 +1,3 @@
 {"stream": "test", "record": {"column1": 123, "column2": "data1"}}
 {"stream": "test", "record": {"column1": 456, "column2": "data2"}}
+{"stream": "test", "record": {"column1": {"a": 1, "b": {"a": 2, "b": 3}}, "column2": "data2"}}
